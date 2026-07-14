@@ -1,4 +1,3 @@
-# cybersecurity-portfolio
 # Cybersecurity Portfolio
 
 A collection of hands-on cybersecurity projects, labs, and technical documentation demonstrating my learning and practical experience in Security Operations (SOC), network security, threat detection, and incident response.
