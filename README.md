@@ -1,2 +1,43 @@
 # cybersecurity-portfolio
-Hands-on cybersecurity portfolio showcasing SOC labs, Google Cybersecurity projects, threat detection, incident response, networking, and security research.
+# Cybersecurity Portfolio
+
+A collection of hands-on cybersecurity projects, labs, and technical documentation demonstrating my learning and practical experience in Security Operations (SOC), network security, threat detection, and incident response.
+
+## Repository Structure
+
+google-cybersecurity/
+```
+
+soc-labs/
+wireshark/
+linux/
+detection-engineering/
+threat-hunting/
+incident-response/
+digital-forensics/
+cloud-security/
+writeups/
+```
+
+## Technologies
+
+- Linux
+- Windows
+- Wireshark
+- Python
+- SQL
+- Git & GitHub
+- Splunk
+- ELK Stack
+
+## Current Focus
+
+- Security Operations (SOC)
+- Threat Detection
+- Incident Response
+- Network Security
+- Detection Engineering
+
+---
+
+This portfolio is continuously updated with new projects, labs, and practical cybersecurity exercises.
