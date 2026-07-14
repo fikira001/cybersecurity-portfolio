@@ -4,18 +4,9 @@ A collection of hands-on cybersecurity projects, labs, and technical documentati
 
 ## Repository Structure
 
-google-cybersecurity/
 ```
+google-cybersecurity/
 
-soc-labs/
-wireshark/
-linux/
-detection-engineering/
-threat-hunting/
-incident-response/
-digital-forensics/
-cloud-security/
-writeups/
 ```
 
 ## Technologies
