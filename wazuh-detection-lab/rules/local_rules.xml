@@ -1,0 +1,46 @@
+<!--
+  Wazuh Custom Detection Rules: Ransomware Staging (T1490)
+  Author: Idris Lawan Mustapha
+  Target Path: /var/ossec/etc/rules/local_rules.xml
+  Tested via: /var/ossec/bin/wazuh-logtest
+-->
+
+<group name="windows,ransomware,attack_defense,">
+
+  <!-- Detect Shadow Copy Deletion (vssadmin) -->
+  <rule id="100001" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)vssadmin\.exe</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)delete.*shadows</field>
+    <description>CRITICAL: Ransomware Staging - Volume Shadow Copy Deletion Detected (MITRE T1490)</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>ransomware,high_severity,</group>
+  </rule>
+
+  <!-- Detect Recovery Environment Disabling (bcdedit) -->
+  <rule id="100002" level="11">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)bcdedit\.exe</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)recoveryenabled.*No</field>
+    <description>HIGH: Ransomware Staging - Windows Boot Recovery Disabled (MITRE T1490)</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>ransomware,high_severity,</group>
+  </rule>
+
+  <!-- Detect Backup Catalog Destruction (wbadmin) -->
+  <rule id="100003" level="11">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)wbadmin\.exe</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)delete.*catalog</field>
+    <description>HIGH: Ransomware Staging - Backup Catalog Deletion (MITRE T1490)</description>
+    <mitre>
+      <id>T1490</id>
+    </mitre>
+    <group>ransomware,high_severity,</group>
+  </rule>
+
+</group>
