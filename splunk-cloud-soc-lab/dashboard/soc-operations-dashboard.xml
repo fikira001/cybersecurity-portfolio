@@ -1,0 +1,143 @@
+<dashboard version="1.1" theme="dark">
+  <label>SOC Operations &amp; Threat Monitoring Center</label>
+  <description>Enterprise Splunk Cloud Security Operations Center Dashboard - Monitoring Host Telemetry, Sysmon, and Active Threats</description>
+
+  <!-- Row 1: KPI Single Values -->
+  <row>
+    <panel>
+      <single>
+        <title>Total Security Telemetry (24h)</title>
+        <search>
+          <query>index=main | stats count</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <refresh>1m</refresh>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="rangeColors">["0x53a051","0x006d9c"]</option>
+        <option name="underLabel">Total Ingested Events</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Critical Detections Triggered</title>
+        <search>
+          <query>index=main EventCode=1 (CommandLine="*vssadmin*delete*shadows*" OR CommandLine="*bcdedit*recoveryenabled*" OR Image="*\\Users\\Public\\*") | stats count</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <refresh>30s</refresh>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="underLabel">High / Critical Alerts</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Active Monitored Endpoints</title>
+        <search>
+          <query>index=main | stats dc(host) as TotalHosts</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <refresh>5m</refresh>
+        </search>
+        <option name="colorMode">none</option>
+        <option name="underLabel">Reporting Systems</option>
+      </single>
+    </panel>
+  </row>
+
+  <!-- Row 2: Ingestion Trends & Attack MITRE Distribution -->
+  <row>
+    <panel>
+      <chart>
+        <title>Security Event Ingestion Velocity</title>
+        <search>
+          <query>index=main | timechart span=15m count by sourcetype</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Events Ingested</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>MITRE ATT&amp;CK Tactics Breakdown</title>
+        <search>
+          <query>index=main EventCode=1 
+| eval Technique=case(
+    match(CommandLine,"vssadmin"), "T1490 Inhibit Recovery",
+    match(CommandLine,"payload"), "T1204 Malicious File",
+    match(CommandLine,"bypass"), "T1059 PowerShell",
+    match(CommandLine,"Set-MpPreference"), "T1562 Defense Evasion",
+    match(CommandLine,"lsass"), "T1003 LSASS Access",
+    1=1, "Baseline Activity") 
+| stats count by Technique</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+      </chart>
+    </panel>
+  </row>
+
+  <!-- Row 3: Process Telemetry & Top Outbound Sockets -->
+  <row>
+    <panel>
+      <chart>
+        <title>Top Processes by Execution Frequency</title>
+        <search>
+          <query>index=main EventCode=1
+| stats count by Image
+| sort -count
+| head 10</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.legend.placement">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Top Network Outbound Destinations (Sysmon Event ID 3)</title>
+        <search>
+          <query>index=main EventCode=3
+| stats count by DestinationIp
+| sort -count
+| head 10</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.legend.placement">none</option>
+      </chart>
+    </panel>
+  </row>
+
+  <!-- Row 4: Real-Time Forensic Analyst Event Stream -->
+  <row>
+    <panel>
+      <table>
+        <title>Real-Time Forensic Event Stream (Last 50 High-Fidelity Events)</title>
+        <search>
+          <query>index=main (EventCode=1 OR EventCode=3 OR EventCode=10 OR EventCode=4624 OR EventCode=4672)
+| table _time, host, User, EventCode, Image, CommandLine, DestinationIp
+| sort -_time
+| head 50</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <refresh>30s</refresh>
+        </search>
+        <option name="count">15</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

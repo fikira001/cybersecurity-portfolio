@@ -1,0 +1,42 @@
+/*
+================================================================================
+Detection ID:       DET-003
+Title:              Suspicious PowerShell Execution Flags & Defense Evasion
+MITRE ATT&CK:       T1059.001 - Command and Scripting Interpreter: PowerShell
+Data Source:        Sysmon Event ID 1 (Process Creation)
+Severity:           High
+Author:             Idris Lawan Mustapha
+Target Platform:    Splunk Cloud Platform
+================================================================================
+Description:
+Detects the execution of PowerShell with suspicious command-line parameters 
+frequently utilized by adversaries to bypass security controls, obscure commands, 
+or tamper with endpoint defenses (e.g. -ExecutionPolicy Bypass, -EncodedCommand, 
+-WindowStyle Hidden, -NoProfile, DisableRealtimeMonitoring).
+
+False Positives:
+- Enterprise administrative orchestration scripts (SCCM, Ansible, Datto RMM)
+Mitigation / Tuning: Filter by verified service accounts and established parent 
+processes running approved scripts from protected administrative paths.
+================================================================================
+*/
+
+// Standard Extracted Field Query:
+index=main EventCode=1 Image="*powershell.exe*"
+(CommandLine="*-enc*" OR
+ CommandLine="*bypass*" OR
+ CommandLine="*hidden*" OR
+ CommandLine="*DisableRealtimeMonitoring*" OR
+ CommandLine="*-nop*")
+| table _time, host, User, CommandLine, ParentImage
+| sort -_time
+
+// Sysmon XmlWinEventLog Direct PCRE Extraction Query:
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" "<EventID>1</EventID>"
+| rex field=_raw "<Data Name='Image'>(?<Image>[^<]+)</Data>"
+| rex field=_raw "<Data Name='CommandLine'>(?<CommandLine>[^<]+)</Data>"
+| rex field=_raw "<Data Name='ParentImage'>(?<ParentImage>[^<]+)</Data>"
+| rex field=_raw "<Data Name='User'>(?<User>[^<]+)</Data>"
+| search Image="*powershell.exe*" (CommandLine="*-enc*" OR CommandLine="*bypass*" OR CommandLine="*hidden*" OR CommandLine="*DisableRealtimeMonitoring*" OR CommandLine="*-nop*")
+| table _time, host, User, CommandLine, ParentImage
+| sort -_time

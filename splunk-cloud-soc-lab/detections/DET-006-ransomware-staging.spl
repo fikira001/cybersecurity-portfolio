@@ -1,0 +1,41 @@
+/*
+================================================================================
+Detection ID:       DET-006
+Title:              Ransomware Pre-Staging: Recovery Inhibition & Shadow Copy Deletion
+MITRE ATT&CK:       T1490 - Inhibit System Recovery
+Data Source:        Sysmon Event ID 1 (Process Creation) / Security Event 4688
+Severity:           Critical
+Author:             Idris Lawan Mustapha
+Target Platform:    Splunk Cloud Platform
+================================================================================
+Description:
+Detects execution of administrative utilities (vssadmin, wbadmin, bcdedit) 
+attempting to delete Volume Shadow Copies, destroy system backup catalogs, or 
+disable Windows Boot Recovery. These operations are systematically performed by 
+virtually all major ransomware variants (LockBit, BlackCat, Akira, REvil) to 
+inhibit data recovery prior to payload encryption.
+
+False Positives:
+- Rare enterprise backup administrators executing approved maintenance windows.
+Mitigation / Tuning: Due to extreme risk of data loss, this rule should never be 
+silenced. Require documented change management tickets and correlate with admin accounts.
+================================================================================
+*/
+
+// Standard Extracted Field Query:
+index=main EventCode=1
+(CommandLine="*vssadmin*delete*shadows*" OR
+ CommandLine="*wbadmin*delete*catalog*" OR
+ CommandLine="*bcdedit*recoveryenabled*No*")
+| table _time, host, User, CommandLine, ParentImage
+| sort -_time
+
+// Direct PCRE Extraction Query for XmlWinEventLog:
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" "<EventID>1</EventID>"
+| rex field=_raw "<Data Name='Image'>(?<Image>[^<]+)</Data>"
+| rex field=_raw "<Data Name='CommandLine'>(?<CommandLine>[^<]+)</Data>"
+| rex field=_raw "<Data Name='ParentImage'>(?<ParentImage>[^<]+)</Data>"
+| rex field=_raw "<Data Name='User'>(?<User>[^<]+)</Data>"
+| search (CommandLine="*vssadmin*delete*shadows*" OR CommandLine="*wbadmin*delete*catalog*" OR CommandLine="*bcdedit*recoveryenabled*No*")
+| table _time, host, User, Image, CommandLine, ParentImage
+| sort -_time

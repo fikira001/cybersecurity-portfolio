@@ -1,0 +1,32 @@
+/*
+================================================================================
+Detection ID:       DET-004
+Title:              Suspicious LSASS Process Handle Access (Credential Dumping Indicator)
+MITRE ATT&CK:       T1003.001 - OS Credential Dumping: LSASS Memory
+Data Source:        Sysmon Event ID 10 (ProcessAccess)
+Severity:           High
+Author:             Idris Lawan Mustapha
+Target Platform:    Splunk Cloud Platform
+================================================================================
+Description:
+Monitors for non-standard process handle requests opened against the Local Security 
+Authority Subsystem Service (lsass.exe). Attackers utilize tools such as Mimikatz, 
+Meterpreter (hashdump/mimikatz), and ProcDump to access process memory of LSASS to 
+extract plaintext passwords, NTLM hashes, and Kerberos tickets.
+
+False Positives:
+- Host Antivirus, EDR sensors (CrowdStrike, SentinelOne, Defender), and backup agents
+Mitigation / Tuning: Whitelist known endpoint protection executables by binary path, 
+hash, and specific granted access rights (e.g. 0x1400 query information).
+================================================================================
+*/
+
+// Standard Extracted Field Query:
+index=main EventCode=10 TargetImage="*lsass.exe*"
+| table _time, host, SourceImage, TargetImage, GrantedAccess, CallTrace
+| sort -_time
+
+// Correlation Query with Authentication & Privilege Escalation Events:
+index=main (EventCode=4624 OR EventCode=4672 OR EventCode=4688 OR EventCode=10)
+| table _time, host, EventCode, Account_Name, Image, CommandLine, TargetImage
+| sort -_time

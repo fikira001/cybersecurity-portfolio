@@ -1,0 +1,36 @@
+/*
+================================================================================
+Detection ID:       DET-005
+Title:              Impair Defenses via Windows Defender Tampering
+MITRE ATT&CK:       T1562.001 - Impair Defenses: Disable or Modify Tools
+Data Source:        Sysmon Event ID 1 (Process Creation) / Security Event 4688
+Severity:           High
+Author:             Idris Lawan Mustapha
+Target Platform:    Splunk Cloud Platform
+================================================================================
+Description:
+Detects command-line instructions invoking Set-MpPreference to disable Windows 
+Defender security features, specifically real-time protection, script inspection, 
+or IOAV protection. Attackers disable endpoint defenses prior to staging payloads 
+or secondary loaders.
+
+False Positives:
+- Automated provisioning scripts during initial staging in developer environments
+Mitigation / Tuning: Enforce Tamper Protection via Intune/GPO, which renders 
+Set-MpPreference modifications ineffective, and alert unconditionally on any attempt.
+================================================================================
+*/
+
+// Standard Extracted Field Query:
+index=main EventCode=1 CommandLine="*Set-MpPreference*"
+(CommandLine="*Disable*" OR CommandLine="*false*")
+| table _time, host, User, CommandLine
+| sort -_time
+
+// Direct PCRE Extraction Query for XmlWinEventLog:
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" "<EventID>1</EventID>"
+| rex field=_raw "<Data Name='CommandLine'>(?<CommandLine>[^<]+)</Data>"
+| rex field=_raw "<Data Name='User'>(?<User>[^<]+)</Data>"
+| search CommandLine="*Set-MpPreference*" (CommandLine="*Disable*" OR CommandLine="*false*")
+| table _time, host, User, CommandLine
+| sort -_time

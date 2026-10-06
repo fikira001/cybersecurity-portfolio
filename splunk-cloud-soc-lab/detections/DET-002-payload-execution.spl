@@ -1,0 +1,40 @@
+/*
+================================================================================
+Detection ID:       DET-002
+Title:              Executable Staging & Execution from Untrusted Directory
+MITRE ATT&CK:       T1204.002 - User Execution: Malicious File
+Data Source:        Sysmon Event ID 1 (Process Creation)
+Severity:           High
+Author:             Idris Lawan Mustapha
+Target Platform:    Splunk Cloud Platform
+================================================================================
+Description:
+Monitors for process creation events occurring from world-writable, non-standard 
+directories commonly used by threat actors and loaders to stage dropped binaries 
+(e.g., C:\Users\Public, C:\Temp, AppData\Local\Temp). Legitimate binaries are 
+expected to run from Program Files or System32.
+
+False Positives:
+- Legacy third-party software installers unpacking self-extracting archives into \Temp\
+Mitigation / Tuning: Scope out known enterprise deployment installers by validating 
+ParentImage (e.g. msiexec.exe, setup.exe) or code-signing certificates.
+================================================================================
+*/
+
+// Standard Extracted Field Query:
+index=main EventCode=1
+(Image="*\\Users\\Public\\*" OR Image="*\\Temp\\*" OR Image="*\\AppData\\Local\\Temp\\*")
+Image!="*\\Windows\\*"
+| table _time, host, User, Image, CommandLine, ParentImage
+| sort -_time
+
+// Sysmon XmlWinEventLog Fallback / Direct PCRE Extraction Query:
+// (Matches verified telemetry from Splunk Cloud production instance)
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" "<EventID>1</EventID>"
+| rex field=_raw "<Data Name='Image'>(?<Image>[^<]+)</Data>"
+| rex field=_raw "<Data Name='CommandLine'>(?<CommandLine>[^<]+)</Data>"
+| rex field=_raw "<Data Name='ParentImage'>(?<ParentImage>[^<]+)</Data>"
+| rex field=_raw "<Data Name='User'>(?<User>[^<]+)</Data>"
+| search (Image="*\\Users\\Public\\*" OR Image="*\\Temp\\*" OR Image="*\\AppData\\Local\\Temp\\*") NOT Image="*\\Windows\\*"
+| table _time, host, User, Image, CommandLine, ParentImage
+| sort -_time

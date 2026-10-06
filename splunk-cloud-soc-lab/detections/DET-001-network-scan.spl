@@ -1,0 +1,38 @@
+/*
+================================================================================
+Detection ID:       DET-001
+Title:              Network Service Scanning (Port Sweep)
+MITRE ATT&CK:       T1046 - Network Service Scanning
+Data Source:        Sysmon Event ID 3 (Network Connection)
+Severity:           Medium
+Author:             Idris Lawan Mustapha
+Target Platform:    Splunk Cloud Platform
+================================================================================
+Description:
+Identifies anomalous network connections where a single external or internal 
+source IP connects to an unusually high number of unique destination ports on 
+a target host within a short time window. Typical of automated port scanners 
+(Nmap, Masscan, Zenmap).
+
+False Positives:
+- Authorized internal vulnerability scanners (Nessus, Qualys, Rapid7 InsightVM)
+- Network performance monitoring agents and asset discovery tools
+Mitigation / Tuning: Whitelist authorized scanner IP ranges using a lookup table:
+`NOT [| inputlookup authorized_scanners.csv | fields src_ip]`
+================================================================================
+*/
+
+// Standard Extracted Field Query:
+index=main EventCode=3
+| stats dc(DestinationPort) as unique_ports count by src_ip
+| where unique_ports > 20
+| sort -unique_ports
+
+// Sysmon XmlWinEventLog Fallback / Direct PCRE Extraction Query:
+// Used when Sysmon events are ingested with renderXml=true before XML field extraction
+index=main sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" "<EventID>3</EventID>"
+| rex field=_raw "<Data Name='SourceIp'>(?<src_ip>[^<]+)</Data>"
+| rex field=_raw "<Data Name='DestinationPort'>(?<dest_port>[^<]+)</Data>"
+| stats dc(dest_port) as unique_ports count by src_ip
+| where unique_ports > 1
+| sort -unique_ports
