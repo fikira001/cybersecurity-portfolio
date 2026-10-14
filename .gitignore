@@ -1,0 +1,12 @@
+# Private internal study guides & manuals (personal consumption only)
+docs/
+
+# Local analytics data
+*.xlsx
+
+# Python environments & cache
+__pycache__/
+*.py[cod]
+.env
+venv/
+.venv/
